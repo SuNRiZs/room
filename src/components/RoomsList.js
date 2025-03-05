@@ -5,23 +5,39 @@ import '../App.css';
 
 const RoomsList = () => {
   const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchRooms()
-      .then(res => {
-        setRooms(res.data);
-      })
-      .catch(err => {
-        console.error("Ошибка получения переговорок:", err);
-      });
+    const loadRooms = async () => {
+      try {
+        const data = await fetchRooms();
+        if (!Array.isArray(data)) {
+          console.error("API вернул некорректный ответ:", data);
+          throw new Error("Ошибка загрузки данных. Проверьте подключение к API.");
+        }
+        setRooms(data);
+      } catch (error) {
+        console.error("Ошибка загрузки комнат:", error);
+        setError("Ошибка загрузки данных. Проверьте подключение к API.");
+        setRooms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadRooms();
   }, []);
 
   return (
     <div className="rooms-list-container" style={{ padding: '1rem', textAlign: 'center' }}>
       <h2>Выберите переговорку</h2>
-      <div className="rooms-grid" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>
-        {rooms.length > 0 ? (
-          rooms.map(room => (
+      {loading ? (
+        <p>Загрузка...</p>
+      ) : error ? (
+        <p style={{ color: 'red' }}>{error}</p>
+      ) : rooms.length > 0 ? (
+        <div className="rooms-grid" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>
+          {rooms.map(room => (
             <Link key={room.id} to={`/rooms/${room.id}`} style={{ textDecoration: 'none' }}>
               <div
                 className="room-card"
@@ -37,11 +53,11 @@ const RoomsList = () => {
                 <h3 style={{ marginBottom: '0.5rem', color: '#333' }}>{room.display_name}</h3>
               </div>
             </Link>
-          ))
-        ) : (
-          <p>Нет добавленных переговорок. Пожалуйста, добавьте их в админке.</p>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p>Нет доступных переговорок. Перейдите в <Link to="/admin/settings">админку</Link>, чтобы настроить подключения.</p>
+      )}
     </div>
   );
 };

@@ -1,81 +1,66 @@
-import React, { useEffect, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import RoomsList from './components/RoomsList';
-import MainView from './components/MainView';
-import AdminLogin from './components/AdminLogin';
-import AdminDashboard from './components/AdminDashboard';
-import { SettingsProvider } from './SettingsContext';
-import SettingsContext from './SettingsContext';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { fetchRooms } from '../services/api';
+import { Link } from 'react-router-dom';
+import '../App.css';
+import './AdminSettings.css';
 
-function App() {
-  return (
-    <SettingsProvider>
-      <AppContent />
-    </SettingsProvider>
-  );
-}
-
-function AppContent() {
-  const { settings } = useContext(SettingsContext);
-  let wakeLock = null;
-
-  async function enableWakeLock() {
-    try {
-      wakeLock = await navigator.wakeLock.request("screen");
-      wakeLock.addEventListener("release", () => {
-        console.log("Wake Lock released");
-      });
-    } catch (err) {
-      console.error("Wake Lock error:", err);
-    }
-  }
-
-  async function disableWakeLock() {
-    if (wakeLock) {
-      await wakeLock.release();
-      wakeLock = null;
-      console.log("Wake Lock disabled");
-    }
-  }
-
-  function checkScreenTime() {
-    const now = new Date();
-    const hours = now.getHours();
-    const isWorkTime = hours >= 8 && hours < 20; // Время работы: 08:00 - 20:00
-
-    if (isWorkTime) {
-      enableWakeLock();
-    } else {
-      disableWakeLock();
-    }
-  }
+const RoomsList = () => {
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    checkScreenTime();
-    const interval = setInterval(checkScreenTime, 60000); // Проверяем каждую минуту
-    return () => clearInterval(interval);
-  }, [settings]);
-
-  function enterFullScreen() {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen();
-    }
-  }
+    const loadRooms = async () => {
+      try {
+        const data = await fetchRooms();
+        if (!data || !Array.isArray(data)) {
+          console.error("API вернул некорректный ответ:", data);
+          throw new Error("Ошибка загрузки данных. Проверьте подключение к API.");
+        }
+        setRooms(data);
+      } catch (error) {
+        console.error("Ошибка загрузки комнат:", error);
+        setError("Ошибка загрузки данных. Проверьте подключение к API.");
+        setRooms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadRooms();
+  }, []);
 
   return (
-    <div className="App" onClick={enterFullScreen}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<RoomsList />} />
-          <Route path="/rooms/:roomId" element={<MainView />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/*" element={<AdminDashboard />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
+    <div className="rooms-list-container" style={{ padding: '1rem', textAlign: 'center' }}>
+      <h2>Выберите переговорку</h2>
+      {loading ? (
+        <p>Загрузка...</p>
+      ) : error ? (
+        <p style={{ color: 'red' }}>{error}</p>
+      ) : rooms.length > 0 ? (
+        <div className="rooms-grid" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>
+          {rooms.map(room => (
+            <Link key={room.id} to={`/rooms/${room.id}`} style={{ textDecoration: 'none' }}>
+              <div
+                className="room-card"
+                style={{
+                  border: '1px solid #ccc',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  minWidth: '200px',
+                  backgroundColor: '#fff',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                }}
+              >
+                <h3 style={{ marginBottom: '0.5rem', color: '#333' }}>{room.display_name}</h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p>Нет доступных переговорок. Перейдите в <Link to="/admin/settings">админку</Link>, чтобы настроить подключения.</p>
+      )}
     </div>
   );
-}
+};
 
-export default App;
+export default RoomsList;
