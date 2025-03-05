@@ -1,0 +1,171 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+@font-face {
+    font-family: 'TTNormsPro';
+    src: url('./assets/fonts/TTNormsPro-Regular.woff2') format('woff2'),
+         url('./assets/fonts/TTNormsPro-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+  }
+
+@font-face {
+    font-family: 'EuclidCircularB';
+    src: url('./assets/fonts/EuclidCircularB-Regular.woff2') format('woff2'),
+         url('./assets/fonts/EuclidCircularB-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+  }
+
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: auto; /* Не 100%, чтобы не сжималось */
+    font-family: 'TTNormsPro', sans-serif;
+    background: none;
+    position: relative;
+    overflow-x: hidden; /* скрываем только гор. прокрутку */
+  }
+  
+  /* 1) Градиент через body::before */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #1fbf68 0%, #00a2b8 100%);
+    z-index: -3;
+  }
+  
+  /* 2) Первая полоса (body::after) */
+  body::after {
+    content: "";
+    position: fixed;
+    top: -50px;
+    left: 20%;
+    width: 400px;
+    height: 200%;
+    background: rgba(255,255,255,0.03);
+    transform: rotate(25deg);
+    z-index: -2;
+    pointer-events: none;
+  }
+  
+  /* 3) Вторая полоса (.wrapper::before) */
+  .wrapper::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: -80px;
+    width: 600px;
+    height: 300%;
+    background: rgba(255,255,255,0.05);
+    transform: rotate(-20deg);
+    z-index: -1;
+    pointer-events: none;
+  }
+  
+  /* 4) Третья полоса (.wrapper::after) */
+  .wrapper::after {
+    content: "";
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    width: 200px;
+    height: 250%;
+    background: rgba(255,255,255,0.07);
+    transform: rotate(15deg);
+    z-index: -1;
+    pointer-events: none;
+  }
+  
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible; /* чтобы круг в левом блоке не резался */
+  }
+  
+  /* Шапка */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    background: transparent;
+    padding: 1rem;
+  }
+
+  .header-logo {
+    width: 250px;
+    height: auto;
+  }
+  
+  .header-time {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+  .current-time {
+    font-size: 2.6rem;
+    font-weight: bold;
+    line-height: 1.0;
+  }
+  .header-date-day {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+  
+  /* Контент */
+  .content {
+    display: flex;
+    overflow: visible; /* не скрываем круг */
+    /* align-items: flex-start; <-- если нужно прижать к верху */
+  }
+  
+  /* Левый блок (left-block-container) */
+  .left-block-container {
+    width: 45%;
+    background: transparent;
+    position: relative;
+    overflow: visible; /* важно, чтобы круг не обрезался */
+  }
+  
+  /* Правый блок (right-block) -- здесь скролл */
+  .right-block {
+    flex: 1;
+    /* Например, высота экрана минус высота шапки (допустим 70px) */
+    height: calc(100vh - 70px - 0.5rem);
+    overflow-y: auto; /* если встреч много, здесь скролл */
+    padding: 1rem;
+    background: transparent;
+  }
+  
+  /* MeetingList */
+  .meeting-list {
+    width: 100%;
+  }
+  
+  /* Адаптив для узких */
+  @media (max-width: 768px) {
+    .content {
+      flex-direction: column;
+      overflow: visible;
+    }
+    .left-block-container {
+      width: 100%;
+    }
+    /* height calc(100vh - 70px) можно тоже адаптировать, если нужно */
+    .right-block {
+      height: auto; /* Если на узких хотим по-другому */
+    }
+  }
+  

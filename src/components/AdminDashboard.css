@@ -1,0 +1,36 @@
+.admin-dashboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.admin-nav {
+    width: 100%;
+    background: #282c34;
+    padding: 10px 0;
+}
+
+.admin-nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-nav ul li {
+    margin: 0 15px;
+}
+
+.admin-nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.admin-content {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 800px;
+}

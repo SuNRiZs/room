@@ -1,0 +1,51 @@
+.admin-tablet-settings {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-tablet-settings h2 {
+    text-align: center;
+}
+
+.admin-tablet-settings table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.admin-tablet-settings th, .admin-tablet-settings td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.admin-tablet-settings th {
+    background: #007bff;
+    color: white;
+}
+
+.admin-tablet-settings input {
+    width: 60px;
+    padding: 5px;
+    text-align: center;
+}
+
+.admin-tablet-settings button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    background: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.admin-tablet-settings button:hover {
+    background: #218838;
+}
