@@ -1,7 +1,16 @@
+// src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import 'moment/locale/ru';  // Чтобы moment показывал дни недели на русском
+import { SettingsProvider } from './SettingsContext';
+import 'moment/locale/ru';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+root.render(
+  <SettingsProvider>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </SettingsProvider>
+);

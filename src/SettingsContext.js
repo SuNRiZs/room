@@ -1,25 +1,22 @@
-import React, { createContext, useState, useEffect } from 'react';
+// src/SettingsContext.js
+import React, { createContext, useState } from 'react';
 
-const SettingsContext = createContext();
+const defaultSettings = {
+  API_BASE_URL: '',
+  ADMIN_API_BASE_URL: '',
+  TOKEN: '',
+  app_id: '',
+  // Для защиты глобальных настроек (можно менять по необходимости)
+  globalSettingsAuthorized: true 
+};
+
+const SettingsContext = createContext({
+  settings: defaultSettings,
+  setSettings: () => {}
+});
 
 export const SettingsProvider = ({ children }) => {
-  const [settings, setSettings] = useState({
-    API_BASE_URL: 'http://localhost:5000',
-    ADMIN_API_BASE_URL: 'http://localhost:5001',
-    TOKEN: null, // Токен теперь в памяти
-  });
-
-  useEffect(() => {
-    const savedSettings = JSON.parse(sessionStorage.getItem('app_settings'));
-    if (savedSettings) {
-      setSettings(savedSettings);
-    }
-  }, []);
-
-  useEffect(() => {
-    sessionStorage.setItem('app_settings', JSON.stringify(settings));
-  }, [settings]);
-
+  const [settings, setSettings] = useState(defaultSettings);
   return (
     <SettingsContext.Provider value={{ settings, setSettings }}>
       {children}

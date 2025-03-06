@@ -1,10 +1,10 @@
-import { Navigate } from 'react-router-dom';
-import { useContext } from 'react';
-import SettingsContext from './SettingsContext';
+import React from 'react';
+import { Navigate } from 'react-router-dom'; // ✅ Добавляем импорт Navigate
 
 const ProtectedRoute = ({ element }) => {
-  const { settings } = useContext(SettingsContext);
-  return settings.TOKEN ? element : <Navigate to="/admin/login" />;
+  const token = localStorage.getItem("adminToken");
+
+  return token ? element : <Navigate to="/admin/login" />;
 };
 
 export default ProtectedRoute;

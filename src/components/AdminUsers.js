@@ -1,5 +1,7 @@
+// src/components/AdminUsers.js
 import React, { useEffect, useState } from 'react';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../services/api';
+import '../AdminStyles.css';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -10,37 +12,32 @@ const AdminUsers = () => {
     role: 'viewer'
   });
 
-  const loadUsers = () => {
-    fetchUsers()
-      .then(res => setUsers(res.data))
-      .catch(err => console.error(err));
-  };
-
   useEffect(() => {
+    async function loadUsers() {
+      try {
+        const data = await fetchUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
     loadUsers();
   }, []);
 
-  const resetForm = () => {
-    setFormData({ username: '', password: '', role: 'viewer' });
-    setEditingUser(null);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingUser) {
-      updateUser(editingUser.id, formData)
-        .then(() => {
-          loadUsers();
-          resetForm();
-        })
-        .catch(err => console.error(err));
-    } else {
-      createUser(formData)
-        .then(() => {
-          loadUsers();
-          resetForm();
-        })
-        .catch(err => console.error(err));
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, formData);
+      } else {
+        await createUser(formData);
+      }
+      const data = await fetchUsers();
+      setUsers(data);
+      setEditingUser(null);
+      setFormData({ username: '', password: '', role: 'viewer' });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -49,66 +46,53 @@ const AdminUsers = () => {
     setFormData({ username: user.username, password: '', role: user.role });
   };
 
-  const handleDelete = (id) => {
-    deleteUser(id)
-      .then(() => loadUsers())
-      .catch(err => console.error(err));
+  const handleDelete = async (userId) => {
+    if (window.confirm('Удалить пользователя?')) {
+      try {
+        await deleteUser(userId);
+        const data = await fetchUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   return (
-    <div>
+    <div className="admin-users">
       <h3>Список пользователей</h3>
-      <table>
+      <table className="admin-table">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Имя пользователя</th>
-            <th>Роль</th>
-            <th>Действия</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {users.map(u => (
-            <tr key={u.id}>
-              <td>{u.id}</td>
-              <td>{u.username}</td>
-              <td>{u.role}</td>
+          {users.map(user => (
+            <tr key={user.id}>
+              <td>{user.id}</td>
+              <td>{user.username}</td>
+              <td>{user.role}</td>
               <td>
-                <button onClick={() => handleEdit(u)}>Редактировать</button>
-                <button onClick={() => handleDelete(u.id)}>Удалить</button>
+                <button onClick={() => handleEdit(user)}>Изменить</button>
+                <button onClick={() => handleDelete(user.id)}>Удалить</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-
-      <h3>{editingUser ? 'Редактировать пользователя' : 'Добавить пользователя'}</h3>
-      <form onSubmit={handleSubmit}>
-        <label>Имя пользователя:</label>
-        <input
-          type="text"
-          value={formData.username}
-          onChange={(e)=>setFormData({...formData, username: e.target.value})}
-          required
-        />
-        <label>Пароль: {editingUser ? '(оставьте пустым, если не менять)' : ''}</label>
-        <input
-          type="password"
-          value={formData.password}
-          onChange={(e)=>setFormData({...formData, password: e.target.value})}
-        />
-        <label>Роль:</label>
-        <select
-          value={formData.role}
-          onChange={(e)=>setFormData({...formData, role: e.target.value})}
-        >
-          <option value="viewer">Просмотр</option>
-          <option value="editor">Редактирование</option>
-          <option value="admin">Администрирование</option>
+      <form className="admin-form" onSubmit={handleSubmit}>
+        <h3>{editingUser ? 'Редактировать пользователя' : 'Добавить пользователя'}</h3>
+        <input type="text" placeholder="Username" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} />
+        <input type="password" placeholder="Password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+        <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+          <option value="viewer">Viewer</option>
+          <option value="admin">Admin</option>
         </select>
-        <button type="submit">
-          {editingUser ? 'Сохранить' : 'Добавить'}
-        </button>
+        <button type="submit">{editingUser ? 'Обновить' : 'Создать'}</button>
       </form>
     </div>
   );

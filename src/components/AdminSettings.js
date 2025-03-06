@@ -1,7 +1,8 @@
 import React, { useContext, useState } from 'react';
 import SettingsContext from '../SettingsContext';
-import api from '../services/api';
-import './AdminSettings.css';
+import axios from 'axios';
+import '../AdminStyles.css';
+
 
 function AdminSettings() {
   const { settings, setSettings } = useContext(SettingsContext);
@@ -12,7 +13,7 @@ function AdminSettings() {
 
   async function checkApiStatus() {
     try {
-      await api.get('/health');
+      await axios.get(`${apiBaseUrl}/health`);
       setStatus('✅ API доступен');
     } catch (error) {
       setStatus('❌ API недоступен');
@@ -30,20 +31,22 @@ function AdminSettings() {
 
   return (
     <div className="admin-settings">
-      <h2>Основные настройки</h2>
-      <label>API Base URL:</label>
-      <input type="text" value={apiBaseUrl} onChange={(e) => setApiBaseUrl(e.target.value)} />
-      
-      <label>Admin API Base URL:</label>
-      <input type="text" value={adminApiBaseUrl} onChange={(e) => setAdminApiBaseUrl(e.target.value)} />
-      
-      <label>API Токен:</label>
-      <input type="text" value={token} onChange={(e) => setToken(e.target.value)} />
-      
-      <p>Статус соединения: <strong>{status}</strong></p>
-      
-      <button onClick={saveSettings}>Сохранить</button>
-      <button onClick={checkApiStatus}>Проверить API</button>
+      <h2>Глобальные настройки</h2>
+      <label>
+        API_BASE_URL:
+        <input type="text" value={apiBaseUrl} onChange={e => setApiBaseUrl(e.target.value)} />
+      </label>
+      <label>
+        ADMIN_API_BASE_URL:
+        <input type="text" value={adminApiBaseUrl} onChange={e => setAdminApiBaseUrl(e.target.value)} />
+      </label>
+      <label>
+        Admin Token:
+        <input type="text" value={token || ''} onChange={e => setToken(e.target.value)} />
+      </label>
+      <button type="button" onClick={checkApiStatus}>Проверить соединение</button>
+      <p>Status: {status}</p>
+      <button type="button" onClick={saveSettings}>Сохранить настройки</button>
     </div>
   );
 }

@@ -168,4 +168,69 @@ html, body {
       height: auto; /* Если на узких хотим по-другому */
     }
   }
+
+  /* 📌 Общие стили для списка переговорок */
+.rooms-container {
+  text-align: center;
+  padding: 2rem;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Заголовок */
+.rooms-container h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #fff; /* Поддержка темного интерфейса */
+  font-family: 'EuclidCircularB', sans-serif;
+}
+
+/* 📌 Сетка переговорок */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  width: 90%;
+  max-width: 1000px;
+}
+
+/* 📌 Карточка переговорки */
+.room-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+  color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Анимация при наведении */
+.room-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* 📌 Адаптивность для планшетов */
+@media (max-width: 768px) {
+  .rooms-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .room-card {
+    font-size: 1.2rem;
+    padding: 1rem;
+  }
+}
+
   

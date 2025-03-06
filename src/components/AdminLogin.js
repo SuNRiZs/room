@@ -1,36 +1,43 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useApi from '../services/api';
-import SettingsContext from '../SettingsContext';
+import { adminLogin } from '../services/api';
+import '../AdminStyles.css';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { setSettings, settings } = useContext(SettingsContext);
   const navigate = useNavigate();
-  const { adminLogin } = useApi();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await adminLogin({ username, password });
-      if (response.data.token) {
-        setSettings({ ...settings, TOKEN: response.data.token });
-        navigate('/admin');
+      const data = await adminLogin({ username, password });
+      console.log("Ответ от сервера:", data);
+
+      if (data && data.success && data.token) {
+        localStorage.setItem("adminToken", data.token); // Сохраняем токен
+        navigate('/admin'); // Перенаправление в админку
       } else {
         alert('Ошибка входа');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       alert('Ошибка входа');
     }
   };
 
   return (
     <div className="login-container">
-      <h2>Вход в Админку</h2>
+      <h2>Вход в админку</h2>
       <form onSubmit={handleLogin}>
-        <input type="text" placeholder="Логин" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        <input type="password" placeholder="Пароль" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <label>
+          Логин:
+          <input value={username} onChange={e => setUsername(e.target.value)} />
+        </label>
+        <label>
+          Пароль:
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+        </label>
         <button type="submit">Войти</button>
       </form>
     </div>
