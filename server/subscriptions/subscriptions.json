@@ -1,0 +1,68 @@
+[
+  {
+    "subscription": {
+      "endpoint": "https://wns2-db5p.notify.windows.com/w/?token=BQYAAABzBGgxj%2bo0W0PGJZqUVJFWgs6I3IV3UIWHll4sZ8KM0FwrSJPLMSnJOmVG2RDq4xHXe6bGNgqWe7tWKmrsjdwmBkfXmC77tJDgwp7Z2im3PSA53Us4p%2fJR%2bc1nnHEOEP%2b6RxvxkrV%2bXKEVqLqaPKX%2b6FnSzBCOfnG27K48ovuZ7iHbGBYnnRhWUnlijs37tboe7EkPlRjMWzg2PZCXFMXEN65yLlf9JCSKagriDBnOw7HmHrkTFr5fsM8Gtu8HAcWQoW9sbV0NVvSk09KzrK%2b3%2fpYHrkoE8haJD4RWJnxgyFQTMOWZ7%2bGZWw8Mf48fvDdhknb7Ug0pBI1V%2fbCBitvkYz55aj%2fCHJAoQ%2bBuRwUPdA%3d%3d",
+      "expirationTime": null,
+      "keys": {
+        "p256dh": "BC7rFGWrO3K2GJpWiEe3r_UERgcOCxABAAe8ZOn2pS671RCr5LD4KvIwFhMVEG30hNhq9CRcplTf2faumHdImNo",
+        "auth": "CTBO7MSbP8NaElxP0755gg"
+      }
+    },
+    "deviceId": "device_8aw6oztkw"
+  },
+  {
+    "subscription": {
+      "endpoint": "https://fcm.googleapis.com/fcm/send/dcEln4xygNM:APA91bGZV_yQeIUZ2oOU2vsTInWvZih4wVuozGhzN98r20N6TUXb5Ab2kCCCc8q8JcKcCR-Iz_AbKbTR6jHi3xWnDOO-8IfG-yCrg89QM_yNckf5oTD5hg2SCExyB1lnymLRI8EisjLx",
+      "expirationTime": null,
+      "keys": {
+        "p256dh": "BFahOKM4MWy-QkWYATYZgaYdqcuIiM4tBYjKjiaHeiZDqq6plhJ9W8wDfcuPyayBwDGhXgtbjkxihwl607_-Iio",
+        "auth": "UCKvaaq8vWp689j2m9abDQ"
+      }
+    },
+    "deviceId": "tablet_ucwjf6j8b"
+  },
+  {
+    "subscription": {
+      "endpoint": "https://fcm.googleapis.com/fcm/send/fQ0vlCcCEWo:APA91bGchR1FhRT_bNM47oKx3XnI6wY4ebUkoDMykLL8etUgXpGbyZ5FbsoMfAMeUL5BKJSPgBG7YiDB3U0DBfixUu73wD1AI-rRVrHj4bjWUDpDFdHGlj6W_UHL-BDV4OOBtKOKCBt8",
+      "expirationTime": null,
+      "keys": {
+        "p256dh": "BAPrtNxeCd4brvJWb9wagGeqGd4lC2X-xNWsE5beJAhyWp35PLyRKRo8yYjdYUG0GH_FCt85U3N7-nfZYjqXs5Q",
+        "auth": "4ecE1gk_qTYtGAC3l6KJHQ"
+      }
+    },
+    "deviceId": "Windows_v1_ModelX-577b8i"
+  },
+  {
+    "subscription": {
+      "endpoint": "https://updates.push.services.mozilla.com/wpush/v2/gAAAAABn0CUX1zfOjmxnUmqAXpuPrbjxLOlAlVFErEvgMpJmZmp8mIBKmsVdndsuLTjKVUWKAL2tLHlVWnz0PjqO9bJMX3SPTKIqhuubyUrKs9NnPMFV4EryS8g00HWk-oub64cw4bzs9jxylx3PdoyWtHrYOgU1ByLRDjmuDmCY9xezPAmPPcM",
+      "expirationTime": null,
+      "keys": {
+        "auth": "wkleM97DK1EuMiSxbhQmdw",
+        "p256dh": "BEiM6L9JbTjtvvQVvS_Ez2WynetsCuSi0xrc0Y5J5wzgNMzRV20O0JIvaR8hQbPI5EcHgEYViMn1iq2lfw581gQ"
+      }
+    },
+    "deviceId": "Windows_v1_ModelX-8y0vlb"
+  },
+  {
+    "subscription": {
+      "endpoint": "https://fcm.googleapis.com/fcm/send/fk6pnhGhECw:APA91bEq1BpglqqsOJPVYqhwCBLwjYjrlWxyIP7xv5fhh-3WeXmkeyWN4oMCDu8TGIcTP6t9Nvn3Brfidy9ukCViNA38XYp1FzZZaNA6ruCfRXscHsFm_I0D9DzB2LnmgAugsR5wIbZk",
+      "expirationTime": null,
+      "keys": {
+        "p256dh": "BHKNPv2hsINKaD9kafNoagMGxjUnDle8wbaGLfFddimPeijv1NqszGN2PtBVruD1OPjS73vMf7bLH26QIVJd8ZQ",
+        "auth": "HOI5nlPSSTwSqxu3JmLbcQ"
+      }
+    },
+    "deviceId": "UnknownOS_v1_ModelX-urzr71"
+  },
+  {
+    "subscription": {
+      "endpoint": "https://fcm.googleapis.com/fcm/send/eu_j9yqN6LY:APA91bH0fU5ckOV6bnAFpC20R6c98YDDTxTT30YxJFBhAH36okTxg4EYh3FQX_lkFrprPwtUNhs5kn2lAt2Q-8-IJvCDEPBM9XcEo349L7ZLQ-lMtg_ZmdPW8KmKebaVxlMezRlQra4M",
+      "expirationTime": null,
+      "keys": {
+        "p256dh": "BLRxX-T9GiIupkCoP0Rk5ECrXpWMWV2ilocxH_xd3QRHo8EEvgGknhTNpESz8qgrkHjKZd_O72xeYrk5Z8U-TxQ",
+        "auth": "0oIabHHkXzUPu7aWY96m-g"
+      }
+    },
+    "deviceId": "UnknownOS_v1_ModelX-man13e"
+  }
+]

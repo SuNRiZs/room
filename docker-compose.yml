@@ -1,7 +1,6 @@
-version: '3.8'
-
+version: '3'
 services:
-  react-app:
+  frontend:
     build: .
     ports:
       - "7000:80"
@@ -10,3 +9,13 @@ services:
     volumes:
       - .:/app
     restart: unless-stopped
+    depends_on:
+      - backend
+  backend:
+    build: ./server
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server/subscriptions:/app/subscriptions
+    env_file:
+      - ./server/.env

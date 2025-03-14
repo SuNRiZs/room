@@ -1,11 +1,15 @@
 import React from 'react';
 import moment from 'moment';
+import { motion } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCalendar, faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 
 function MeetingList({
   events,
   showDays = false,
   currentEvent = null,
-  statusColor = '#fff'
+  statusColor = '#ff1200',
+  showMeetingSubject = true,
 }) {
   if (!events || events.length === 0) {
     return <div className="meeting-list">Нет событий</div>;
@@ -13,7 +17,6 @@ function MeetingList({
 
   const now = moment();
 
-  // Исключаем currentEvent из общего списка
   let mainList = events;
   if (currentEvent) {
     mainList = mainList.filter(e => !(e.start === currentEvent.start && e.end === currentEvent.end));
@@ -31,116 +34,79 @@ function MeetingList({
       currentDayLabel = dayLabel;
     }
 
-    // Полупрозрачный фон для встречи, белый текст
-    const containerStyle = {
-      backgroundColor: 'rgba(255,255,255,0.25)',
-      color: '#fff',
-      borderRadius: '8px',
-      marginBottom: '1rem',
-      padding: '1rem'
-    };
-
     return (
       <React.Fragment key={idx}>
         {showDayHeader && (
-          <div style={{
-            fontSize: '1.3rem',
-            fontWeight: 'bold',
-            margin: '1.5rem 0 0.5rem',
-            color: '#003f8f'
-          }}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="day-label"
+          >
             {dayLabel}
-          </div>
+          </motion.div>
         )}
 
-        <div style={containerStyle}>
-          <div style={{
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start' // выравнивание слева
-          }}>
-            <span>{start.format('HH:mm')}</span>
-            <img
-              src="/right-arrow.svg"
-              alt="→"
-              style={{
-                verticalAlign: 'middle',
-                margin: '0 5px',
-                height: '1em',
-                filter: 'brightness(0) invert(1)' // делаем стрелку белой
-              }}
-            />
-            <span>{end.format('HH:mm')}</span>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: idx * 0.1 }}
+          className="event-container"
+        >
+          <FontAwesomeIcon icon={faCalendar} size="2x" color="#fff" />
+          <div className="event-details">
+            <div className="event-time">
+              <span>{start.format('HH:mm')}</span>
+              <span className="event-time-arrow">→</span>
+              <span>{end.format('HH:mm')}</span>
+            </div>
+            {showMeetingSubject && (
+              <div className="event-subject">{ev.subject || 'Без темы'}</div>
+            )}
+            <div className="event-booked-by">
+              Забронировал: {ev.booked_by || 'Неизвестно'}
+            </div>
           </div>
-          <div style={{ fontSize: '1rem', marginTop: '0.3rem' }}>
-            {ev.subject || 'Без темы'}
-          </div>
-          <div style={{ fontSize: '0.9rem', marginTop: '0.2rem', opacity: 0.9 }}>
-            Забронировал: {ev.booked_by || 'Неизвестно'}
-          </div>
-        </div>
+        </motion.div>
       </React.Fragment>
     );
   };
 
-  // Блок "Сейчас"
   let nowBlock = null;
   if (currentEvent) {
-    let textCol = '#fff';
-    if (statusColor === '#ffc857') {
-      textCol = '#333';
-    }
     nowBlock = (
-      <div style={{ marginBottom: '1rem' }}>
-        <div style={{
-          fontSize: '1.3rem',
-          fontWeight: 'bold',
-          margin: '1.5rem 0 0.5rem',
-          color: textCol
-        }}>
-          Сейчас
-        </div>
-        <div style={{
-          backgroundColor: statusColor,
-          color: textCol,
-          borderRadius: '8px',
-          marginBottom: '1rem',
-          padding: '1rem'
-        }}>
-          <div style={{
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start'
-          }}>
-            <span>{moment(currentEvent.start).format('HH:mm')}</span>
-            <img
-              src="/right-arrow.svg"
-              alt="→"
-              style={{
-                verticalAlign: 'middle',
-                margin: '0 5px',
-                height: '1em',
-                filter: 'brightness(0) invert(1)'
-              }}
-            />
-            <span>{moment(currentEvent.end).format('HH:mm')}</span>
+      <motion.div
+        className="current-event-wrapper"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="current-event-label">Сейчас</div>
+        <motion.div
+          className="current-event-container"
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <FontAwesomeIcon icon={faHourglassHalf} size="2x" color="#003f8f" />
+          <div className="event-details">
+            <div className="event-time">
+              <span>{moment(currentEvent.start).format('HH:mm')}</span>
+              <span className="event-time-arrow">→</span>
+              <span>{moment(currentEvent.end).format('HH:mm')}</span>
+            </div>
+            {showMeetingSubject && (
+              <div className="event-subject">{currentEvent.subject || 'Без темы'}</div>
+            )}
+            <div className="event-booked-by">
+              Забронировал: {currentEvent.booked_by || 'Неизвестно'}
+            </div>
           </div>
-          <div style={{ fontSize: '1rem', marginTop: '0.3rem' }}>
-            {currentEvent.subject || 'Без темы'}
-          </div>
-          <div style={{ fontSize: '0.9rem', marginTop: '0.2rem' }}>
-            Забронировал: {currentEvent.booked_by || 'Неизвестно'}
-          </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
-  // Остальные события
   const dayBlocks = [];
   let i = 0;
   mainList.forEach(ev => {
@@ -161,10 +127,15 @@ function MeetingList({
   });
 
   return (
-    <div className="meeting-list">
+    <motion.div
+      className="meeting-list"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       {nowBlock}
       {dayBlocks}
-    </div>
+    </motion.div>
   );
 }
 

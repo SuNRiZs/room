@@ -1,79 +1,79 @@
 import React, { useEffect, useState, useRef, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
+import { motion } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLock, faClock } from '@fortawesome/free-solid-svg-icons';
 import { getRoomStatus, bookRoom } from '../services/api';
 import Header from './Header';
 import MeetingList from './MeetingList';
-import CircleTimer from './CircleTimer';
+import CircleTimer from './CircleTimer'; // Импортируем новый компонент
 import SettingsContext from '../SettingsContext';
 import '../App.css';
+
+// Вспомогательная функция для преобразования VAPID-ключа
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 function MainView() {
   const { roomId } = useParams();
   const { settings } = useContext(SettingsContext);
 
-  // Данные переговорки
   const [roomName, setRoomName] = useState('—');
   const [currentStatus, setCurrentStatus] = useState('СВОБОДНО');
   const [events, setEvents] = useState([]);
 
-  // Таймер (счётчик до окончания события)
   const [timeLeftSec, setTimeLeftSec] = useState(0);
   const [totalSec, setTotalSec] = useState(0);
   const [timerEvent, setTimerEvent] = useState(null);
   const timerRef = useRef(null);
-  const lastEventRef = useRef({ status: '', eventData: null });
+  const lastEventRef = useRef({ status: 'СВОБОДНО', eventData: null });
 
-  // Форма «Выбрать другое время»
   const [showExtraForm, setShowExtraForm] = useState(false);
   const [selectedHours, setSelectedHours] = useState(1);
   const defaultDurations = [15, 30, 45, 60];
-  const extraDurations = [120, 180, 240, 480];
 
-  // Стили для кнопок формы
-  const buttonStyle = {
-    all: 'unset',
-    backgroundColor: '#357a5c',
-    color: '#fff',
-    padding: '0.5rem 1rem',
-    borderRadius: '8px',
-    fontSize: '1.2rem',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  };
-  const confirmButtonStyle = { ...buttonStyle, backgroundColor: '#357a5c' };
-  const cancelButtonStyle = { ...buttonStyle, backgroundColor: '#aaa' };
-
-  // Настройки планшета
   const [tabletSettings, setTabletSettings] = useState(null);
   const [isActive, setIsActive] = useState(true);
-  let wakeLock = null;
+  const wakeLockRef = useRef(null);
+  const lastIsActiveRef = useRef(null);
 
-  // Функция для запроса Wake Lock
   const requestWakeLock = async () => {
     try {
       if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
-        console.log('Wake Lock активирован');
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        console.log('Wake Lock успешно запрошен');
       }
     } catch (err) {
-      console.error('Ошибка Wake Lock:', err);
+      console.error('Ошибка запроса Wake Lock:', err);
     }
   };
 
-  // Функция для отключения Wake Lock
   const releaseWakeLock = async () => {
-    if (wakeLock !== null) {
-      await wakeLock.release();
-      wakeLock = null;
-      console.log('Wake Lock отключён');
+    if (wakeLockRef.current !== null) {
+      try {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+        console.log('Wake Lock успешно освобождён');
+      } catch (err) {
+        console.error('Ошибка освобождения Wake Lock:', err);
+      }
+    } else {
+      console.log('Wake Lock уже освобождён или не запрошен');
     }
   };
 
-  // Увеличить/уменьшить кол-во часов
   const handleIncrease = () => {
     const newHours = selectedHours + 1;
-    if (newHours > 12) return; // максимум 12 часов
+    if (newHours > 12) return;
     if (!canBookDuration(newHours * 60)) return;
     setSelectedHours(newHours);
   };
@@ -82,7 +82,6 @@ function MainView() {
     setSelectedHours((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
-  // Подтверждение выбора «Выбрать другое время»
   const handleConfirm = () => {
     const duration = selectedHours * 60;
     handleBook(duration).then(() => {
@@ -90,142 +89,239 @@ function MainView() {
     });
   };
 
-  /**
-   * Основная функция получения статуса переговорки и расписания планшета
-   */
-  const fetchStatus = () => {
-    const deviceId = localStorage.getItem('device_id');
-    getRoomStatus(roomId, deviceId)
-      .then((data) => {
-        const now = moment();
+  const shouldTabletBeActive = (settings) => {
+    console.log('Проверка активности планшета, настройки:', settings);
 
-        // Обновляем имя переговорки
-        if (data.display_name) {
-          setRoomName(data.display_name);
-        } else if (data.roomName) {
-          setRoomName(data.roomName);
-        }
+    if (!settings || typeof settings !== 'object') {
+      console.log('Настройки отсутствуют или не являются объектом');
+      return false;
+    }
 
-        // Фильтруем события
-        const upcoming = (data.events || []).filter((e) =>
-          now.isBefore(moment(e.end))
-        );
-        upcoming.sort((a, b) => moment(a.start).diff(moment(b.start)));
-        setEvents(upcoming);
+    const dayOfWeek = settings.day_of_week;
+    const startHour = settings.start_hour;
+    const endHour = settings.end_hour;
 
-        // Определяем статус переговорки
-        let st = 'СВОБОДНО';
-        if (data.roomIsOccupied) {
-          st = 'ЗАНЯТО';
-        } else if (
-          data.timeToNextEvent !== null &&
-          data.timeToNextEvent <= 15
-        ) {
-          st = 'ОЖИДАНИЕ';
-        }
-        setCurrentStatus(st);
-
-        // Определяем текущее/следующее событие для таймера
-        let newTimerEvent = null;
-        let newTimeLeft = 0;
-        let newTotal = 0;
-        if (st === 'ЗАНЯТО') {
-          // Ищем текущее событие
-          const ongoing = upcoming.find((ev) =>
-            now.isBetween(moment(ev.start), moment(ev.end))
-          );
-          if (ongoing) {
-            newTimerEvent = ongoing;
-            newTotal = moment(ongoing.end).diff(
-              moment(ongoing.start),
-              'seconds'
-            );
-            newTimeLeft = moment(ongoing.end).diff(now, 'seconds');
-            if (newTimeLeft < 0) newTimeLeft = 0;
-          }
-        } else if (st === 'ОЖИДАНИЕ') {
-          // Ищем ближайшее
-          const nextEv = upcoming.find((ev) =>
-            now.isBefore(moment(ev.start))
-          );
-          if (nextEv) {
-            newTimerEvent = nextEv;
-            newTotal = 900; // 15 минут
-            let left = moment(nextEv.start).diff(now, 'seconds');
-            if (left < 0) left = 0;
-            if (left > 900) left = 900;
-            newTimeLeft = left;
-          }
-        }
-
-        // Проверяем, изменился ли таймер
-        let changed = false;
-        if (!newTimerEvent) {
-          if (lastEventRef.current.status !== st) {
-            changed = true;
-          }
-        } else {
-          const old = lastEventRef.current;
-          const oldStart = old.eventData ? old.eventData.start : null;
-          if (old.status !== st || oldStart !== newTimerEvent.start) {
-            changed = true;
-          }
-        }
-
-        if (changed) {
-          // Сбрасываем прошлый таймер
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          if (newTimerEvent) {
-            setTimerEvent(newTimerEvent);
-            setTotalSec(newTotal);
-            setTimeLeftSec(newTimeLeft);
-            startInterval(); // Запуск нового отсчёта
-          } else {
-            setTimerEvent(null);
-            setTotalSec(0);
-            setTimeLeftSec(0);
-          }
-          lastEventRef.current = {
-            status: st,
-            eventData: newTimerEvent
-              ? { start: newTimerEvent.start, end: newTimerEvent.end }
-              : null,
-          };
-        }
-
-        // Настройки планшета (если есть)
-        if (data.tablet_settings) {
-          setTabletSettings(data.tablet_settings);
-          setIsActive(data.tablet_settings.is_active);
-        } else {
-          setTabletSettings(null);
-          setIsActive(false);
-        }
-      })
-      .catch((err) => {
-        console.error('Ошибка API:', err);
+    if (
+      dayOfWeek === undefined ||
+      dayOfWeek === null ||
+      startHour === undefined ||
+      startHour === null ||
+      endHour === undefined ||
+      endHour === null
+    ) {
+      console.log('Одно или несколько полей отсутствует:', {
+        dayOfWeek,
+        startHour,
+        endHour,
       });
+      return false;
+    }
+
+    const parsedDayOfWeek = parseInt(dayOfWeek, 10);
+    const parsedStartHour = parseInt(startHour, 10);
+    const parsedEndHour = parseInt(endHour, 10);
+
+    if (
+      isNaN(parsedDayOfWeek) ||
+      parsedDayOfWeek < 0 || parsedDayOfWeek > 6 ||
+      isNaN(parsedStartHour) ||
+      parsedStartHour < 0 || parsedStartHour >= 24 ||
+      isNaN(parsedEndHour) ||
+      parsedEndHour < 0 || parsedEndHour > 24
+    ) {
+      console.log('Невалидные значения настроек:', {
+        parsedDayOfWeek,
+        parsedStartHour,
+        parsedEndHour,
+      });
+      return false;
+    }
+
+    const now = moment();
+    const currentDay = now.day();
+    const currentHour = now.hour();
+    const currentTime = now.format('YYYY-MM-DD HH:mm:ss');
+    console.log(`Текущий день недели (moment): ${currentDay}, текущее время: ${currentTime}`);
+
+    const targetDay = (parsedDayOfWeek + 1) % 7;
+    console.log(`Серверный день недели: ${parsedDayOfWeek}, преобразованный день (moment): ${targetDay}`);
+
+    if (currentDay !== targetDay) {
+      console.log(`День недели не совпадает: текущий день ${currentDay}, целевой день ${targetDay}`);
+      return false;
+    }
+
+    console.log(`Диапазон времени: start_hour=${parsedStartHour}, end_hour=${parsedEndHour}, текущий час=${currentHour}`);
+
+    const isInRange = parsedStartHour <= parsedEndHour
+      ? currentHour >= parsedStartHour && currentHour < parsedEndHour
+      : currentHour >= parsedStartHour || currentHour < parsedEndHour;
+    console.log(`Время в диапазоне: ${isInRange}`);
+
+    return isInRange;
   };
 
-  /**
-   * Запуск обратного отсчёта (таймер)
-   */
+  const fetchStatus = async () => {
+    const deviceId = localStorage.getItem('device_id');
+    try {
+      const data = await getRoomStatus(roomId, deviceId);
+      const now = moment();
+
+      console.log('Данные от сервера:', data);
+
+      if (data.display_name) {
+        setRoomName(data.display_name);
+      } else if (data.roomName) {
+        setRoomName(data.roomName);
+      }
+
+      const upcoming = (data.events || []).filter((e) =>
+        now.isBefore(moment(e.end))
+      );
+      upcoming.sort((a, b) => moment(a.start).diff(moment(b.start)));
+      setEvents(upcoming);
+
+      let st = 'СВОБОДНО';
+      if (data.roomIsOccupied) {
+        st = 'ЗАНЯТО';
+      } else if (
+        data.timeToNextEvent !== null &&
+        data.timeToNextEvent <= 15
+      ) {
+        st = 'ОЖИДАНИЕ';
+      }
+      setCurrentStatus(st);
+
+      let newTimerEvent = null;
+      let newTimeLeft = 0;
+      let newTotal = 0;
+      if (st === 'ЗАНЯТО') {
+        const ongoing = upcoming.find((ev) =>
+          now.isBetween(moment(ev.start), moment(ev.end))
+        );
+        if (ongoing) {
+          newTimerEvent = ongoing;
+          newTotal = moment(ongoing.end).diff(
+            moment(ongoing.start),
+            'seconds'
+          );
+          newTimeLeft = moment(ongoing.end).diff(now, 'seconds');
+          if (newTimeLeft < 0) newTimeLeft = 0;
+        }
+      } else if (st === 'ОЖИДАНИЕ') {
+        const nextEv = upcoming.find((ev) =>
+          now.isBefore(moment(ev.start))
+        );
+        if (nextEv) {
+          newTimerEvent = nextEv;
+          newTotal = 900; // 15 минут в секундах
+          let left = moment(nextEv.start).diff(now, 'seconds');
+          if (left < 0) left = 0;
+          if (left > 900) left = 900;
+          newTimeLeft = left;
+        }
+      }
+
+      let changed = false;
+      if (!newTimerEvent) {
+        if (lastEventRef.current.status !== st) {
+          changed = true;
+        }
+      } else {
+        const old = lastEventRef.current;
+        const oldStart = old.eventData ? old.eventData.start : null;
+        if (old.status !== st || oldStart !== newTimerEvent.start) {
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        if (newTimerEvent) {
+          setTimerEvent(newTimerEvent);
+          setTotalSec(newTotal);
+          setTimeLeftSec(newTimeLeft);
+          startInterval();
+        } else {
+          setTimerEvent(null);
+          setTotalSec(0);
+          setTimeLeftSec(0);
+        }
+        lastEventRef.current = {
+          status: st,
+          eventData: newTimerEvent
+            ? { start: newTimerEvent.start, end: newTimerEvent.end }
+            : null,
+        };
+      }
+
+      if (data.tablet_settings) {
+        setTabletSettings(data.tablet_settings);
+
+        const shouldBeActive = shouldTabletBeActive(data.tablet_settings);
+        console.log('Планшет должен быть активен:', shouldBeActive);
+
+        setIsActive(prev => {
+          const updated = shouldBeActive;
+          console.log('Обновление isActive: prev=', prev, 'updated=', updated, 'lastIsActiveRef.current=', lastIsActiveRef.current);
+          if (prev !== updated) {
+            localStorage.setItem('lastIsActive', updated.toString());
+
+            if (lastIsActiveRef.current === null) {
+              lastIsActiveRef.current = updated;
+            } else {
+              if (updated) {
+                console.log('Отправляем уведомление для deviceId:', deviceId);
+                fetch('/api/send-notification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ deviceId })
+                })
+                  .then((response) => {
+                    if (!response.ok) {
+                      throw new Error(`Ошибка отправки уведомления, статус: ${response.status}`);
+                    }
+                    console.log('Уведомление успешно запланировано на сервере');
+                  })
+                  .catch((err) => {
+                    console.error('Ошибка отправки уведомления:', err);
+                  });
+              }
+              lastIsActiveRef.current = updated;
+            }
+          }
+          return updated;
+        });
+      } else {
+        if (tabletSettings !== null || isActive !== false) {
+          console.log('tablet_settings отсутствует, выключаем планшет');
+          setIsActive(false);
+          localStorage.setItem('lastIsActive', 'false');
+          lastIsActiveRef.current = false;
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка API:', err);
+    }
+  };
+
   const startInterval = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimeLeftSec((prev) => {
-        if (prev > 1) return prev - 1;
-        clearInterval(timerRef.current);
-        return 0;
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
       });
     }, 1000);
   };
 
-  /**
-   * Проверка конфликтов для бронирования
-   */
   const isTimeConflict = (start, end) => {
     for (const e of events) {
       const es = moment(e.start);
@@ -235,9 +331,6 @@ function MainView() {
     return false;
   };
 
-  /**
-   * Проверяем, можно ли забронировать на заданную длительность
-   */
   const canBookDuration = (dur) => {
     if (currentStatus === 'ОЖИДАНИЕ' || currentStatus === 'ЗАНЯТО') return false;
     const begin = moment().add(1, 'minute');
@@ -245,9 +338,6 @@ function MainView() {
     return !isTimeConflict(begin, finish);
   };
 
-  /**
-   * Бронирование переговорки
-   */
   const handleBook = (dur) => {
     return bookRoom(roomId, dur, `Бронировано(${dur} мин)`, settings)
       .then((result) => {
@@ -263,127 +353,148 @@ function MainView() {
       });
   };
 
-  // Обновление статуса переговорки каждые 30 сек
   useEffect(() => {
-    const deviceId = localStorage.getItem('device_id');
-    fetchStatus(roomId, deviceId);
-    const poll = setInterval(() => fetchStatus(roomId, deviceId), 30000);
-    return () => clearInterval(poll);
-    // eslint-disable-next-line
+    const subscribeToPush = async () => {
+      try {
+        if (Notification.permission === 'denied') {
+          return;
+        }
+        if (Notification.permission !== 'granted') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            return;
+          }
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+        } else {
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(process.env.REACT_APP_PUBLIC_VAPID_KEY)
+          });
+
+          const deviceId = localStorage.getItem('device_id') || `device_${Math.random().toString(36).substr(2, 9)}`;
+          localStorage.setItem('device_id', deviceId);
+          await fetch('/api/save-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription, deviceId })
+          });
+        }
+      } catch (error) {
+        console.error('Ошибка подписки:', error);
+      }
+    };
+
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data && event.data.type === 'reload') {
+        window.location.reload();
+      } else if (event.data && event.data.type === 'activate') {
+        setIsActive(true);
+        requestWakeLock();
+      }
+    };
+
+    const initializeStatus = async () => {
+      await fetchStatus();
+      const poll = setInterval(fetchStatus, 30000);
+      return () => clearInterval(poll);
+    };
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+      subscribeToPush();
+    }
+
+    const cleanup = initializeStatus();
+
+    return () => {
+      if (typeof cleanup === 'function') cleanup();
+      if (timerRef.current) clearInterval(timerRef.current);
+      releaseWakeLock().catch(err => console.error('Ошибка при очистке Wake Lock:', err));
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
+    };
   }, [roomId]);
 
-  // Управление видимостью экрана и Wake Lock
   useEffect(() => {
-    if (isActive) {
-      document.body.style.opacity = '1';
-      requestWakeLock();
-    } else {
-      document.body.style.opacity = '0.2';
-      releaseWakeLock();
-    }
-    return () => releaseWakeLock();
-  }, [isActive]);
+    const handleWakeLock = async () => {
+      if (isActive) {
+        document.body.classList.remove('inactive');
+        document.body.style.display = 'block';
+        await requestWakeLock();
+      } else {
+        document.body.classList.add('inactive');
+        document.body.style.display = 'none';
+        await releaseWakeLock();
+      }
+    };
 
-  let statusColor = '#fff';
-  if (currentStatus === 'ЗАНЯТО') {
-    statusColor = '#ff1200';
-  } else if (currentStatus === 'ОЖИДАНИЕ') {
-    statusColor = '#eb9e00';
-  }
+    handleWakeLock().catch(err => console.error('Ошибка управления Wake Lock:', err));
+  }, [isActive]);
 
   return (
     <div className="wrapper">
       <Header roomName={roomName} currentStatus={currentStatus} />
-      <div className="content" style={{ overflow: 'visible' }}>
+      <div className="content">
         {/* Левый блок */}
-        <div
-          className="left-block-container"
-          style={{
-            width: '45%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            paddingTop: '2rem',
-            gap: '2rem',
-            overflow: 'visible',
-            position: 'relative',
-          }}
-        >
-          {/* Имя переговорки */}
+        <div className="left-block-container">
           <div>
-            <h4
-              style={{
-                fontSize: '1.8rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '15px',
-                backgroundColor: 'rgba(255,255,255,0.6)',
-                color: '#003f8f',
-                textAlign: 'center',
-                margin: 0,
-              }}
-            >
-              {roomName}
-            </h4>
+            <h4 className="room-name">{roomName}</h4>
           </div>
-
-          {/* Статус */}
-          <div
-            id="status"
-            style={{
-              fontSize: '3rem',
-              textAlign: 'center',
-              color: statusColor,
-              textShadow: '0 0 3px rgba(0,0,0,0.3)',
-              fontWeight: 'bold',
-              marginBottom: '4rem',
-            }}
-          >
+          <div id="status" className="status-container">
             {isActive ? currentStatus : 'Планшет выключен'}
           </div>
-
-          {/* Круговой таймер */}
-          {timerEvent && totalSec > 0 && (
+          {currentStatus === 'ЗАНЯТО' && (
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="icon-container"
+            >
+              <FontAwesomeIcon
+                icon={faLock}
+                size="4x"
+                color="#fff"
+                style={{ fontSize: '15rem' }}
+              />
+            </motion.div>
+          )}
+          {currentStatus === 'ОЖИДАНИЕ' && (
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="icon-container"
+            >
+              <FontAwesomeIcon
+                icon={faClock}
+                size="4x"
+                color="#fff"
+                style={{ fontSize: '15rem' }}
+              />
+            </motion.div>
+          )}
+          {/* Добавляем CircleTimer */}
+          {(currentStatus === 'ЗАНЯТО' || currentStatus === 'ОЖИДАНИЕ') && (
             <CircleTimer
-              timeLeftSec={timeLeftSec}
+              currentStatus={currentStatus}
+              timerEvent={timerEvent}
               totalSec={totalSec}
-              fillMode="forward"
-              circleColor={statusColor}
-              size={240}
-              radius={70}
+              timeLeftSec={timeLeftSec}
             />
           )}
-
-          {/* Если СВОБОДНО, рисуем кнопки бронирования */}
           {currentStatus === 'СВОБОДНО' && (
-            <div
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '1rem',
-                  justifyContent: 'center',
-                }}
-              >
+            <div className="booking-container">
+              <div className="booking-buttons-container">
                 {defaultDurations.map((dur) => {
                   const canB = canBookDuration(dur);
                   return (
                     <button
                       key={dur}
-                      style={{
-                        all: 'unset',
-                        backgroundColor: canB
-                          ? 'rgba(255,255,255,0.25)'
-                          : 'rgba(255,255,255,0.1)',
-                        color: canB ? '#fff' : '#bbb',
-                        padding: '0.9rem 1.5rem',
-                        borderRadius: '8px',
-                        fontSize: '1.1rem',
-                        fontWeight: 'bold',
-                        cursor: canB ? 'pointer' : 'not-allowed',
-                      }}
+                      className="booking-button"
                       disabled={!canB}
                       onClick={() => handleBook(dur)}
                     >
@@ -392,67 +503,33 @@ function MainView() {
                   );
                 })}
               </div>
-
-              {/* «Выбрать другое время» */}
-              <div style={{ marginTop: '5rem' }}>
+              <div className="extra-time-container">
                 {!showExtraForm ? (
                   <button
-                    style={{
-                      all: 'unset',
-                      padding: '0.8rem 1.5rem',
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: '#fff',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      fontSize: '1.1rem',
-                      cursor: 'pointer',
-                    }}
+                    className="extra-time-button"
                     onClick={() => setShowExtraForm(true)}
                   >
                     Выбрать другое время
                   </button>
                 ) : (
-                  <div
-                    style={{
-                      marginTop: '1rem',
-                      backgroundColor: 'rgba(255,255,255,0.8)',
-                      color: '#333',
-                      padding: '1rem',
-                      borderRadius: '8px',
-                      width: '340px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '1rem',
-                    }}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>
-                      Выберите время (в часах)
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem',
-                      }}
-                    >
-                      <button onClick={handleDecrease} style={buttonStyle}>
+                  <div className="extra-time-form">
+                    <div className="extra-time-text">Выберите время (в часах)</div>
+                    <div className="hours-selector">
+                      <button onClick={handleDecrease} className="hours-button">
                         –
                       </button>
-                      <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                        {selectedHours}
-                      </span>
-                      <button onClick={handleIncrease} style={buttonStyle}>
+                      <span className="hours-value">{selectedHours}</span>
+                      <button onClick={handleIncrease} className="hours-button">
                         +
                       </button>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                      <button onClick={handleConfirm} style={confirmButtonStyle}>
+                    <div className="form-buttons-container">
+                      <button onClick={handleConfirm} className="confirm-button">
                         Забронировать
                       </button>
                       <button
                         onClick={() => setShowExtraForm(false)}
-                        style={cancelButtonStyle}
+                        className="cancel-button"
                       >
                         Отмена
                       </button>
@@ -463,16 +540,13 @@ function MainView() {
             </div>
           )}
         </div>
-
-        {/* Правый блок - список встреч */}
         <div className="right-block">
           <MeetingList
             events={events}
             showDays={true}
-            currentEvent={
-              timerEvent && currentStatus !== 'СВОБОДНО' ? timerEvent : null
-            }
-            statusColor={statusColor}
+            currentEvent={timerEvent && currentStatus !== 'СВОБОДНО' ? timerEvent : null}
+            statusColor="#ff1200"
+            showMeetingSubject={tabletSettings?.show_meeting_subject !== false}
           />
         </div>
       </div>

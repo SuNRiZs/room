@@ -15,8 +15,8 @@ const AdminLogin = () => {
       console.log("Ответ от сервера:", data);
 
       if (data && data.success && data.token) {
-        localStorage.setItem("adminToken", data.token); // Сохраняем токен
-        navigate('/admin'); // Перенаправление в админку
+        localStorage.setItem("adminToken", data.token);
+        navigate('/admin');
       } else {
         alert('Ошибка входа');
       }
@@ -27,18 +27,18 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="login-container">
-      <h2>Вход в админку</h2>
-      <form onSubmit={handleLogin}>
-        <label>
-          Логин:
-          <input value={username} onChange={e => setUsername(e.target.value)} />
-        </label>
-        <label>
-          Пароль:
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
-        </label>
-        <button type="submit">Войти</button>
+    <div className="login-container admin-section">
+      <h2 className="admin-heading">Вход в админку</h2>
+      <form onSubmit={handleLogin} className="admin-form compact-form">
+        <div className="form-group">
+          <label>Логин:</label>
+          <input value={username} onChange={e => setUsername(e.target.value)} required />
+        </div>
+        <div className="form-group">
+          <label>Пароль:</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        </div>
+        <button className="admin-button submit-button" type="submit">Войти</button>
       </form>
     </div>
   );

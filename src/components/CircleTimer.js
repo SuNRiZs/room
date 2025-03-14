@@ -1,83 +1,23 @@
 import React from 'react';
+import moment from 'moment';
 
-function CircleTimer({
-  timeLeftSec,
-  totalSec,
-  fillMode = "forward",
-  circleColor = "#fff",
-  trackColor = "rgba(255,255,255,0.2)",
-  size = 240,
-  radius = 70,
-  strokeWidth = 8
-}) {
-  const padding = strokeWidth / 2;
-  const dimension = 2 * radius + 2 * padding;
-  const circumference = 2 * Math.PI * radius;
-  let offset = circumference;
-  let label = "0:00";
-
-  if (totalSec > 0) {
-    const progress = fillMode === "forward"
-      ? 1 - (timeLeftSec / totalSec)
-      : (timeLeftSec / totalSec);
-    offset = circumference - (progress * circumference);
-    const m = Math.floor(timeLeftSec / 60);
-    const s = timeLeftSec % 60;
-    label = `${m}:${s < 10 ? '0' : ''}${s}`;
+function CircleTimer({ currentStatus, timerEvent, totalSec, timeLeftSec }) {
+  if (!timerEvent || totalSec <= 0 || timeLeftSec <= 0) {
+    return null;
   }
 
+  const progress = timeLeftSec > 0 ? ((totalSec - timeLeftSec) / totalSec) * 100 : 100;
+  const timeLeftFormatted = `${Math.floor(timeLeftSec / 60)}:${(timeLeftSec % 60).toString().padStart(2, '0')}`;
+
   return (
-    <div style={{
-      position: 'relative',
-      width: `${size}px`,
-      height: `${size}px`,
-      overflow: 'visible'
-    }}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`-${padding} -${padding} ${dimension} ${dimension}`}
-        style={{ transform: 'rotate(-90deg)' }}
-      >
-        {/* Фоновый трек */}
-        <circle
-          cx={radius}
-          cy={radius}
-          r={radius}
-          fill="none"
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
+    <div className="progress-container">
+      <div className={`progress-bar ${currentStatus === 'ОЖИДАНИЕ' ? 'waiting' : ''}`}>
+        <div
+          className="progress-bar-fill"
+          style={{ width: `${progress}%` }}
         />
-        {/* Прогрессирующий круг */}
-        <circle
-          cx={radius}
-          cy={radius}
-          r={radius}
-          fill="none"
-          stroke={circleColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.5s linear' }}
-        />
-      </svg>
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        fontSize: '2.5rem',
-        fontWeight: 'bold',
-        color: circleColor,
-        // Используем tabular-nums, чтобы цифры занимали одинаковое пространство:
-        fontVariantNumeric: 'tabular-nums',
-        letterSpacing: '0.05em', // добавлен небольшой промежуток между цифрами
-        textAlign: 'center'
-      }}>
-        {label}
       </div>
+      <div className="timer">{timeLeftFormatted}</div>
     </div>
   );
 }

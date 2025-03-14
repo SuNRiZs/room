@@ -5,6 +5,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { SettingsProvider } from './SettingsContext';
 import 'moment/locale/ru';
+import * as serviceWorker from './serviceWorker';
+
+serviceWorker.register();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

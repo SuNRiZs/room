@@ -4,19 +4,22 @@ import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config';
 // Функция для получения API токена
 const getApiToken = () => localStorage.getItem("apiToken") || process.env.API_TOKEN || "";
 
+// Функция для получения Admin токена
+const getAdminToken = () => localStorage.getItem("adminToken") || "";
+
 // Функция для создания API-инстанса
-const createApiInstance = (baseURL) => {
+const createApiInstance = (baseURL, useAdminToken = false) => {
   return axios.create({
     baseURL,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': getApiToken() ? `Bearer ${getApiToken()}` : ''
+      'Authorization': useAdminToken ? `Bearer ${getAdminToken()}` : `Bearer ${getApiToken()}`
     }
   });
 };
 
-
 // ---------- ФУНКЦИИ ДЛЯ ПЕРЕГОВОРОК ----------
+// Для планшетов (публичный доступ)
 export const fetchRooms = async () => {
   const api = createApiInstance(API_BASE_URL);
   try {
@@ -24,6 +27,18 @@ export const fetchRooms = async () => {
     return response.data;
   } catch (error) {
     console.error("Ошибка получения переговорок:", error);
+    throw error;
+  }
+};
+
+// Для админки (все данные)
+export const fetchAdminRooms = async () => {
+  const api = createApiInstance(ADMIN_API_BASE_URL, true); // Используем adminToken
+  try {
+    const response = await api.get('/rooms');
+    return response.data;
+  } catch (error) {
+    console.error("Ошибка получения переговорок для админки:", error);
     throw error;
   }
 };
@@ -39,7 +54,6 @@ export const getRoomStatus = async (roomId, deviceId = null) => {
     throw error;
   }
 };
-
 
 export const bookRoom = async (roomId, duration, subject) => {
   const api = createApiInstance(API_BASE_URL);
@@ -67,7 +81,7 @@ export const registerTablet = async (deviceId, roomId) => {
     console.log("Ответ регистрации планшета:", response.data);
 
     if (response.data && response.data.token) {
-      localStorage.setItem("roomToken", response.data.token);  // ✅ Сохраняем токен
+      localStorage.setItem("roomToken", response.data.token);
       console.log("Сохранён новый roomToken:", response.data.token);
     } else {
       console.warn("❌ API не вернул токен:", response.data);
@@ -80,11 +94,9 @@ export const registerTablet = async (deviceId, roomId) => {
   }
 };
 
-
 // ---------- ФУНКЦИИ ДЛЯ АДМИНКИ ----------
 export const adminLogin = async (credentials) => {
   const api = createApiInstance(ADMIN_API_BASE_URL);
-  
   console.log("Попытка отправки запроса:", credentials);
 
   try {
@@ -92,7 +104,7 @@ export const adminLogin = async (credentials) => {
     console.log('Ответ от /admin/login:', response.data);
     
     if (response.data.token) {
-      localStorage.setItem("adminToken", response.data.token);  // Сохраняем токен
+      localStorage.setItem("adminToken", response.data.token);
       return response.data;
     } else {
       console.warn("Ответ сервера не содержит токен:", response.data);
@@ -105,7 +117,7 @@ export const adminLogin = async (credentials) => {
 };
 
 export const createRoom = async (roomData) => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.post('/rooms', roomData);
     return response.data;
@@ -116,7 +128,7 @@ export const createRoom = async (roomData) => {
 };
 
 export const updateRoom = async (roomId, roomData) => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.put(`/rooms/${roomId}`, roomData);
     return response.data;
@@ -127,7 +139,7 @@ export const updateRoom = async (roomId, roomData) => {
 };
 
 export const deleteRoom = async (roomId) => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.delete(`/rooms/${roomId}`);
     return response.data;
@@ -139,7 +151,7 @@ export const deleteRoom = async (roomId) => {
 
 // ---------- ФУНКЦИИ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ----------
 export const fetchUsers = async () => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.get('/users');
     return response.data;
@@ -150,7 +162,7 @@ export const fetchUsers = async () => {
 };
 
 export const createUser = async (userData) => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.post('/users', userData);
     return response.data;
@@ -161,7 +173,7 @@ export const createUser = async (userData) => {
 };
 
 export const updateUser = async (userId, userData) => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.put(`/users/${userId}`, userData);
     return response.data;
@@ -172,7 +184,7 @@ export const updateUser = async (userId, userData) => {
 };
 
 export const deleteUser = async (userId) => {
-  const api = createApiInstance(ADMIN_API_BASE_URL);
+  const api = createApiInstance(ADMIN_API_BASE_URL, true);
   try {
     const response = await api.delete(`/users/${userId}`);
     return response.data;
@@ -208,9 +220,10 @@ export const saveGlobalSettings = async (settings) => {
 // Экспорт всех методов API в объекте
 const apiMethods = {
     fetchRooms,
+    fetchAdminRooms, // Добавляем новую функцию
     getRoomStatus,
     bookRoom,
-    registerTablet,  // ✅ Теперь можно регистрировать планшет
+    registerTablet,
     adminLogin,
     createRoom,
     updateRoom,
